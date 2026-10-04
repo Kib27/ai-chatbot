@@ -1,0 +1,159 @@
+{
+  "name": "AI Chatbot Produk - Tugas 6",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hai! Selamat datang di Nurul Fikri Academy. Silakan tanyakan seputar program pelatihan atau biayanya ya!\"",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8362336a-2d83-4f6d-a994-748b0bae5612",
+      "name": "When chat message received",
+      "webhookId": "634c9e01-3a56-4079-9341-801da1fc8266"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "1f8d68e2-9043-407a-8d20-08dd06178b85",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        192
+      ],
+      "id": "9cbc130e-0dcb-41e7-bcce-b78030a7a1ba",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "m8Nl3d1jBU3elH9c",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        192
+      ],
+      "id": "2df41a44-8a0e-4218-8386-4cfe682cac07",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MAr13eIrp7FIT3P7au74GeQwe5CfLb6VzfIfuddm8ek",
+          "mode": "list",
+          "cachedResultName": "Data_Produk_Chatbot_Tugas6",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MAr13eIrp7FIT3P7au74GeQwe5CfLb6VzfIfuddm8ek/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MAr13eIrp7FIT3P7au74GeQwe5CfLb6VzfIfuddm8ek/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        192
+      ],
+      "id": "601088fc-ed0a-4560-92f5-ece5ed3e77f1",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lgSnMayYn4LXcyTK",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6d267a57-012d-4388-96fc-5ce581bf3f13",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc96f10ae7dc95d3c138575ba243a0a167923dbcb524841d451aadf9135d5fb3"
+  },
+  "nodeGroups": [],
+  "id": "VbuGEWAabFW6zsej",
+  "tags": []
+}
