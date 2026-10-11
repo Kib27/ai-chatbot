@@ -1,0 +1,325 @@
+{
+  "name": "Generate gambar konten otomatis - KIE.ai ke Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -496,
+        0
+      ],
+      "id": "2a10bd07-d8c0-4696-b587-13f1ee777402",
+      "name": "Wait",
+      "webhookId": "b6b2f46d-9ace-4444-a440-b7bcc0dd1296"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        624,
+        -16
+      ],
+      "id": "8510ffbb-0ad3-4d11-b5e7-00c1f11e97e3",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "6148926352",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "f78cbd97-424d-4cb7-a28a-e7c121e1463a",
+      "name": "Send a photo message",
+      "webhookId": "411d2e9d-49bf-4c07-b5d0-cc8f172b78c8",
+      "credentials": {
+        "telegramApi": {
+          "id": "MaYerBErBVLHH2iD",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "generate gambar konten otomatis",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "prompt"
+            },
+            {
+              "fieldLabel": "taks_type",
+              "placeholder": "mj_txt2img"
+            },
+            {
+              "fieldLabel": "api_key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -944,
+        0
+      ],
+      "id": "5c280aae-ea0d-4028-847b-cdd6ee4e803f",
+      "name": "submit text prompt untuk generate gambar",
+      "webhookId": "cc205e8b-cd3b-4122-87c3-1bf7666e682b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'seedream/5-flash-text-to-image', input: { prompt: $json.prompt, aspect_ratio: '1:1', size: '1K', nsfw_checker: true, output_format: 'png' } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -720,
+        0
+      ],
+      "id": "029bbd14-5b64-4f46-8fb4-6aa5c4a55ec1",
+      "name": "mengirim image generate request ke KIE.ai"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('mengirim image generate request ke KIE.ai').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('submit text prompt untuk generate gambar').item.json.api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -272,
+        0
+      ],
+      "id": "1a6a2500-69ab-48e4-9eca-fa8bdbabdbf4",
+      "name": "mendapatkan status generate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cac96b41-e6f2-4d12-8bfa-3ab333d5493a",
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "ea4e6ec4-3313-4c67-9052-5148556660bc",
+      "name": "chek jika generate sudah selesai"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawResult = $json.data.resultJson;\nconst result = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;\nconst urls = result?.resultUrls ?? [];\nreturn [{ json: { img1: urls[0] ?? null, img2: urls[1] ?? null, img3: urls[2] ?? null, img4: urls[3] ?? null } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -16
+      ],
+      "id": "017a15a0-22f7-4f6d-8748-6aeabea6ea94",
+      "name": "format result"
+    },
+    {
+      "parameters": {
+        "jsCode": "const urls = [$json.img1, $json.img2, $json.img3, $json.img4].filter(Boolean);\nreturn urls.map((url, index) => ({ json: { url, index: index + 1 } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -16
+      ],
+      "id": "b47c02ab-56b9-4fb6-8a21-9b871b29b133",
+      "name": "loop image"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "mendapatkan status generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "submit text prompt untuk generate gambar": {
+      "main": [
+        [
+          {
+            "node": "mengirim image generate request ke KIE.ai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mengirim image generate request ke KIE.ai": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mendapatkan status generate": {
+      "main": [
+        [
+          {
+            "node": "chek jika generate sudah selesai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chek jika generate sudah selesai": {
+      "main": [
+        [
+          {
+            "node": "format result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format result": {
+      "main": [
+        [
+          {
+            "node": "loop image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop image": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "65418f27-3f70-4239-a77d-7ad66abfc5e6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc96f10ae7dc95d3c138575ba243a0a167923dbcb524841d451aadf9135d5fb3"
+  },
+  "nodeGroups": [],
+  "id": "L0YlBNgx9E59iteg",
+  "tags": []
+}
