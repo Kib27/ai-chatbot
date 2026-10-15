@@ -1,0 +1,481 @@
+{
+  "name": "Tugas5_Pertemuan4_membuat laporan intelijen",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -592,
+        48
+      ],
+      "id": "54f97184-cbe1-4f19-b0ca-e994ebf85651",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        240
+      ],
+      "id": "214da0b8-4daa-4dc4-b495-1b918e3224b1",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "11C1QP63q9uglEuW",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "{\n  \"q\": \"\\\"NF Academy\\\" OR \\\"Nurul Fikri Academy\\\"\",\n  \"gl\": \"id\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -320,
+        -144
+      ],
+      "id": "5eb54f06-9ded-449f-8c80-7fa78a7131fa",
+      "name": "NFA",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "poB2e58Fby6Nkvhb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Fungsi untuk mengambil data secara aman dari node search\nconst getOrganicData = (nodeName) => {\n  try {\n    const results = $(nodeName).all();\n    // Mengambil array 'organic' dari hasil Serper API\n    return results[0].json.organic || [];\n  } catch (e) {\n    return []; // Jika node gagal, berikan array kosong agar workflow tidak stop\n  }\n};\n\nconst nfaResults = getOrganicData('NFA');\nconst bisaResults = getOrganicData('BISA AI');\nconst vinixResults = getOrganicData('Vinix7');\n\n// Gunakan DateTime.now() dari Luxon (bukan $now.format)\nconst currentTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm');\n\n// Gabungkan dan berikan label brand ke setiap berita\nconst finalData = [\n  ...nfaResults.map(i => ({ json: { ...i, brand: 'NF Academy', processedAt: currentTime } })),\n  ...bisaResults.map(i => ({ json: { ...i, brand: 'BISA AI', processedAt: currentTime } })),\n  ...vinixResults.map(i => ({ json: { ...i, brand: 'Vinix 7', processedAt: currentTime } }))\n];\n\nreturn finalData;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        48
+      ],
+      "id": "d7bc3e17-8934-4d8b-9b5b-d763e4d47a4e",
+      "name": "Gabungkan Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil seluruh item dari node sebelumnya\nconst allItems = $input.all();\nconst total = allItems.length;\n\n// Menghitung mention per brand secara total\nconst counts = {\n  nfa: allItems.filter(i => i.json.brand === \"NF Academy\").length,\n  bisa: allItems.filter(i => i.json.brand === \"BISA AI\").length,\n  vinix: allItems.filter(i => i.json.brand === \"Vinix 7\").length\n};\n\n// Menghitung Share of Voice (SOV)\nconst sov = {\n  nfa: total > 0 ? ((counts.nfa / total) * 100).toFixed(1) : 0,\n  bisa: total > 0 ? ((counts.bisa / total) * 100).toFixed(1) : 0,\n  vinix: total > 0 ? ((counts.vinix / total) * 100).toFixed(1) : 0\n};\n\n// Menggabungkan seluruh teks berita menjadi satu blok teks untuk AI\nlet combinedText = \"\";\nallItems.forEach(item => {\n  combinedText += `[${item.json.brand}] ${item.json.title}: ${item.json.snippet}\\n\\n`;\n});\n\n// PENTING: Mengembalikan HANYA SATU objek (bukan array)\nreturn {\n  metrics: {\n    processedAt: DateTime.now().toFormat('yyyy-MM-dd HH:mm'),\n    total_mentions: total,\n    breakdown: counts,\n    share_of_voice: sov,\n    dashboard_url: \"https://docs.google.com/spreadsheets/d/19yDBpx981bYwOzIKD7oxHG80YdfDqY_ZUmVyCIYbXNU/edit\"\n  },\n  text_for_ai: combinedText\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        48
+      ],
+      "id": "2ab07104-ded9-409e-a0e0-632281221897",
+      "name": "Menyiapkan Teks AI "
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ZQZyRpUmpFZXWn0OKF_B9-NwxQo6oXdogifnkJhxcqs",
+          "mode": "list",
+          "cachedResultName": "Workflow Analisis Brand dan Kompetitor_",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZQZyRpUmpFZXWn0OKF_B9-NwxQo6oXdogifnkJhxcqs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZQZyRpUmpFZXWn0OKF_B9-NwxQo6oXdogifnkJhxcqs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Tanggal": "={{ $('Menyiapkan Teks AI ').item.json.metrics.processedAt }}",
+            "NF Acadeny": "={{ $('Menyiapkan Teks AI ').item.json.metrics.breakdown.nfa }}",
+            "BISA AI": "={{ $('Menyiapkan Teks AI ').item.json.metrics.breakdown.bisa }}",
+            "Vinix 7": "={{ $('Menyiapkan Teks AI ').item.json.metrics.breakdown.vinix }}",
+            "Total Mention": "={{ $('Menyiapkan Teks AI ').item.json.metrics.total_mentions }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Tanggal",
+              "displayName": "Tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NF Acadeny",
+              "displayName": "NF Acadeny",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "BISA AI",
+              "displayName": "BISA AI",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vinix 7",
+              "displayName": "Vinix 7",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Mention",
+              "displayName": "Total Mention",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        688,
+        48
+      ],
+      "id": "bee4d9e1-8c77-43c9-afd7-7f34aac5f463",
+      "name": "Mencatat Hasil",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ek1E1AI6JEvtB8tP",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "html": "\n<!DOCTYPE html>\n<html lang=\"id\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n  <title>Laporan Strategi Bisnis & Intelijen Kompetitif</title>\n\n  <style>\n    :root {\n      --orange: #FF6B35;\n      --blue: #2E5AAC;\n      --blue-light: #4A7DCC;\n      --gray-bg: #f8f9fa;\n      --text-dark: #333;\n      --text-light: #6c757d;\n    }\n\n    * {\n      margin: 0;\n      padding: 0;\n      box-sizing: border-box;\n    }\n\n    body {\n      font-family: Arial, Helvetica, sans-serif;\n      line-height: 1.6;\n      color: var(--text-dark);\n      background: #ffffff;\n    }\n\n    .container {\n      max-width: 1000px;\n      margin: 0 auto;\n      padding: 24px;\n    }\n\n    header {\n      background: linear-gradient(135deg, var(--blue), var(--blue-light));\n      color: white;\n      padding: 48px 24px;\n      text-align: center;\n      border-radius: 0 0 14px 14px;\n    }\n\n    header h1 {\n      font-size: 28px;\n      margin-bottom: 10px;\n    }\n\n    header p {\n      font-size: 15px;\n      opacity: 0.95;\n    }\n\n    .badge {\n      display: inline-block;\n      margin-top: 12px;\n      background: var(--orange);\n      padding: 6px 14px;\n      border-radius: 20px;\n      font-size: 13px;\n      font-weight: bold;\n    }\n\n    section {\n      background: #ffffff;\n      margin: 32px 0;\n      padding: 28px;\n      border-radius: 12px;\n      border: 1px solid #eee;\n    }\n\n    h2 {\n      font-size: 22px;\n      color: var(--blue);\n      margin-bottom: 18px;\n      padding-bottom: 8px;\n      border-bottom: 2px solid var(--orange);\n    }\n\n    h3 {\n      font-size: 18px;\n      color: var(--blue);\n      margin: 22px 0 10px;\n    }\n\n    p {\n      margin-bottom: 12px;\n    }\n\n    ul, ol {\n      margin-left: 22px;\n    }\n\n    li {\n      margin-bottom: 10px;\n    }\n\n    .highlight {\n      background: #fff4e6;\n      padding: 2px 6px;\n      border-radius: 4px;\n      font-weight: bold;\n      color: #d35400;\n    }\n\n    .note {\n      background: #f1f6ff;\n      border-left: 4px solid var(--blue);\n      padding: 14px;\n      margin-top: 16px;\n      border-radius: 4px;\n    }\n\n    .warning {\n      background: #fff7f1;\n      border-left: 4px solid var(--orange);\n      padding: 14px;\n      margin-top: 16px;\n      border-radius: 4px;\n    }\n\n    table {\n      width: 100%;\n      border-collapse: collapse;\n      margin-top: 16px;\n    }\n\n    th {\n      background: var(--blue);\n      color: white;\n      padding: 12px;\n      font-size: 14px;\n      text-align: left;\n    }\n\n    td {\n      padding: 12px;\n      border-bottom: 1px solid #eee;\n      font-size: 14px;\n      vertical-align: top;\n    }\n\n    .brand-nf { background: #f1f6ff; }\n    .brand-vinix { background: #f7f7f7; }\n    .brand-bisa { background: #fff7f1; }\n\n    .score-nf {\n      color: var(--blue);\n      font-weight: bold;\n    }\n\n    .score-vinix {\n      color: #218838;\n      font-weight: bold;\n    }\n\n    .score-bisa {\n      color: var(--orange);\n      font-weight: bold;\n    }\n\n    .metric {\n      margin: 18px 0;\n    }\n\n    .metric-label {\n      display: flex;\n      justify-content: space-between;\n      gap: 12px;\n      font-weight: bold;\n      font-size: 14px;\n    }\n\n    .bar {\n      height: 18px;\n      border-radius: 10px;\n      margin: 8px 0 16px;\n      background: #e9ecef;\n      overflow: hidden;\n    }\n\n    .bar span {\n      display: block;\n      height: 100%;\n      border-radius: 10px;\n    }\n\n    .bar-nf span {\n      width: 58.8%;\n      background: var(--blue);\n    }\n\n    .bar-vinix span {\n      width: 41.2%;\n      background: #6c757d;\n    }\n\n    .bar-bisa span {\n      width: 0%;\n      background: var(--orange);\n    }\n\n    .score-card {\n      border: 1px solid #eee;\n      border-radius: 10px;\n      padding: 18px;\n      margin: 14px 0;\n    }\n\n    .score-card h3 {\n      margin-top: 0;\n    }\n\n    .score-number {\n      font-size: 28px;\n      font-weight: bold;\n      margin: 8px 0;\n    }\n\n    .score-scale {\n      height: 8px;\n      background: #e9ecef;\n      border-radius: 8px;\n      overflow: hidden;\n      margin: 10px 0;\n    }\n\n    .score-scale span {\n      display: block;\n      height: 100%;\n      border-radius: 8px;\n    }\n\n    .score-scale .nf-fill {\n      width: 65%;\n      background: var(--blue);\n    }\n\n    .score-scale .vinix-fill {\n      width: 85%;\n      background: #218838;\n    }\n\n    .score-scale .bisa-fill {\n      width: 10%;\n      background: var(--orange);\n    }\n\n    footer {\n      margin-top: 40px;\n      text-align: center;\n      font-size: 13px;\n      color: var(--text-light);\n    }\n\n    @media (max-width: 650px) {\n      .container {\n        padding: 14px;\n      }\n\n      section {\n        padding: 18px;\n        margin: 20px 0;\n      }\n\n      header h1 {\n        font-size: 23px;\n      }\n\n      table {\n        display: block;\n        overflow-x: auto;\n        white-space: normal;\n      }\n\n      th, td {\n        min-width: 110px;\n      }\n    }\n\n    @media print {\n      section {\n        page-break-inside: avoid;\n      }\n\n      header {\n        border-radius: 0;\n      }\n    }\n  </style>\n</head>\n\n<body>\n\n<header>\n  <div class=\"container\">\n    <h1>📊 Laporan Strategi Bisnis & Intelijen Kompetitif</h1>\n    <p>Analisis Share of Voice (SoV) dan Reputasi Digital</p>\n    <div class=\"badge\">📅 15 Oktober 2026</div>\n  </div>\n</header>\n\n<div class=\"container\">\n\n  <section>\n    <h2>📌 Ringkasan Eksekutif</h2>\n\n    <p>\n      Berdasarkan hasil pengumpulan data digital, terdapat\n      <strong>17 mention</strong> untuk NF Academy dan Vinix 7,\n      sedangkan BISA AI tidak terdeteksi dalam data yang dianalisis.\n      NF Academy memiliki jumlah mention tertinggi, yaitu 10 mention\n      atau <span class=\"highlight\">58,8% Share of Voice</span>.\n    </p>\n\n    <p>\n      Meskipun NF Academy unggul dalam volume mention, jumlah tersebut\n      belum tentu seluruhnya berasal dari audiens yang relevan.\n      Data mentah menunjukkan adanya penggunaan nama NF Academy oleh\n      entitas di bidang lain, termasuk sepak bola dan kesehatan.\n    </p>\n\n    <div class=\"metric\">\n      <div class=\"metric-label\">\n        <span>NF Academy</span>\n        <span>10 mention · 58,8%</span>\n      </div>\n      <div class=\"bar bar-nf\"><span></span></div>\n    </div>\n\n    <div class=\"metric\">\n      <div class=\"metric-label\">\n        <span>Vinix 7</span>\n        <span>7 mention · 41,2%</span>\n      </div>\n      <div class=\"bar bar-vinix\"><span></span></div>\n    </div>\n\n    <div class=\"metric\">\n      <div class=\"metric-label\">\n        <span>BISA AI</span>\n        <span>0 mention · 0%</span>\n      </div>\n      <div class=\"bar bar-bisa\"><span></span></div>\n    </div>\n\n    <div class=\"note\">\n      <strong>Temuan utama:</strong>\n      NF Academy unggul dari sisi jumlah mention, tetapi Vinix 7\n      memperoleh skor reputasi lebih tinggi berdasarkan relevansi\n      konten, testimoni mahasiswa, dan keterkaitannya dengan pendidikan\n      serta pengembangan karier.\n    </div>\n  </section>\n\n  <section>\n    <h2>📢 Analisis Share of Voice</h2>\n\n    <h3>🎓 NF Academy</h3>\n    <ul>\n      <li>\n        <strong>Volume mention tinggi:</strong> memperoleh 10 mention\n        dengan SoV sebesar 58,8%.\n      </li>\n      <li>\n        <strong>Potensi positif:</strong> terdapat konten yang berkaitan\n        dengan transformasi karier dan program bootcamp teknologi.\n      </li>\n      <li>\n        <strong>Masalah identitas brand:</strong> nama NF Academy juga\n        digunakan oleh entitas di bidang sepak bola dan kesehatan.\n        Hal ini dapat membuat hasil pencarian kurang relevan bagi\n        calon peserta bootcamp IT.\n      </li>\n      <li>\n        <strong>Tantangan sentimen:</strong> data yang dianalisis belum\n        menunjukkan bukti testimoni positif yang kuat dan konsisten\n        untuk program pendidikan IT NF Academy.\n      </li>\n    </ul>\n\n    <h3>💻 Vinix 7</h3>\n    <ul>\n      <li>\n        <strong>Konten lebih terfokus:</strong> mention yang ditemukan\n        berkaitan dengan pendidikan, magang, MSIB, dan pengembangan karier.\n      </li>\n      <li>\n        <strong>Bukti sosial:</strong> terdapat contoh unggahan pengalaman\n        magang mahasiswa dan publikasi akademik yang berkaitan dengan Vinix 7.\n      </li>\n      <li>\n        <strong>Peluang kompetitif:</strong> relevansi konten dapat\n        membantu membangun kepercayaan calon peserta.\n      </li>\n      <li>\n        <strong>Catatan:</strong> jumlah mention Vinix 7 masih lebih\n        rendah daripada NF Academy, sehingga jangkauan percakapannya\n        dalam dataset ini juga lebih kecil.\n      </li>\n    </ul>\n\n    <h3>🤖 BISA AI</h3>\n    <ul>\n      <li>\n        Tidak ditemukan mention BISA AI dalam dataset yang diberikan.\n      </li>\n      <li>\n        Data ini belum cukup untuk menentukan apakah BISA AI kurang\n        aktif, memiliki sentimen negatif, atau tidak dikenal oleh pasar.\n      </li>\n      <li>\n        Diperlukan pencarian tambahan dengan variasi kata kunci dan\n        sumber data agar kondisi brand dapat dinilai secara lebih akurat.\n      </li>\n    </ul>\n\n    <div class=\"warning\">\n      <strong>Catatan metode:</strong>\n      SoV dihitung berdasarkan jumlah mention yang teridentifikasi\n      dalam dataset. Angka tersebut tidak otomatis menggambarkan\n      keseluruhan popularitas brand di internet.\n    </div>\n  </section>\n\n  <section>\n    <h2>⭐ Skor Reputasi Online</h2>\n\n    <p>\n      Skor berikut mengikuti hasil analisis LLM Chain berdasarkan\n      relevansi konten, sentimen, dan bukti yang tersedia pada data mentah.\n      Skor merupakan penilaian analitis, bukan rating resmi dari pengguna.\n    </p>\n\n    <div class=\"score-card brand-nf\">\n      <h3>🎓 NF Academy</h3>\n      <div class=\"score-number score-nf\">6,5 / 10</div>\n      <div class=\"score-scale\">\n        <span class=\"nf-fill\"></span>\n      </div>\n\n      <p><strong>Kelebihan:</strong></p>\n      <ul>\n        <li>Memiliki konten yang berkaitan dengan bootcamp teknologi.</li>\n        <li>Pesan transformasi karier berpotensi menarik calon peserta.</li>\n        <li>Memiliki aset dan infrastruktur digital yang mendukung identitas online.</li>\n      </ul>\n\n      <p><strong>Kelemahan:</strong></p>\n      <ul>\n        <li>Nama brand bercampur dengan entitas dari industri lain.</li>\n        <li>Bukti testimoni positif yang relevan masih terbatas pada dataset.</li>\n      </ul>\n\n      <p>\n        <strong>Contoh dalam data:</strong>\n        \"Transformasi Karier Anda dengan Bootcamp NF Academy\"\n        dibandingkan dengan hasil pencarian tentang program sepak bola\n        NF Academy.\n      </p>\n    </div>\n\n    <div class=\"score-card brand-vinix\">\n      <h3>💻 Vinix 7</h3>\n      <div class=\"score-number score-vinix\">8,5 / 10</div>\n      <div class=\"score-scale\">\n        <span class=\"vinix-fill\"></span>\n      </div>\n\n      <p><strong>Kelebihan:</strong></p>\n      <ul>\n        <li>Konten lebih relevan dengan pendidikan dan pengembangan karier.</li>\n        <li>Terdapat contoh pengalaman magang mahasiswa.</li>\n        <li>Memiliki keterkaitan dengan proyek akademik dan kolaborasi pendidikan.</li>\n      </ul>\n\n      <p><strong>Kelemahan atau keterbatasan:</strong></p>\n      <ul>\n        <li>Jumlah mention masih lebih sedikit daripada NF Academy.</li>\n        <li>Dataset terbatas sehingga belum cukup untuk menilai seluruh reputasi brand.</li>\n      </ul>\n\n      <p>\n        <strong>Contoh dalam data:</strong>\n        \"Pengalaman berharga magang di VINIX 7 @vinix7idn\"\n        dan \"Perancangan UI/UX Website... Studi Kasus: PT Vinix 7\".\n      </p>\n    </div>\n\n    <div class=\"score-card brand-bisa\">\n      <h3>🤖 BISA AI</h3>\n      <div class=\"score-number score-bisa\">1,0 / 10</div>\n      <div class=\"score-scale\">\n        <span class=\"bisa-fill\"></span>\n      </div>\n\n      <p><strong>Temuan:</strong></p>\n      <ul>\n        <li>Tidak ada mention yang teridentifikasi dalam dataset.</li>\n        <li>Belum tersedia bukti yang cukup untuk menilai sentimen positif atau negatif.</li>\n      </ul>\n\n      <p>\n        <strong>Interpretasi:</strong>\n        Skor 1,0 merupakan skor dari output LLM berdasarkan minimnya\n        data yang tersedia, bukan bukti bahwa reputasi BISA AI sebenarnya\n        sangat buruk.\n      </p>\n    </div>\n\n    <table>\n      <thead>\n        <tr>\n          <th>Brand</th>\n          <th>Mention</th>\n          <th>Share of Voice</th>\n          <th>Skor Reputasi</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr class=\"brand-nf\">\n          <td><strong>NF Academy</strong></td>\n          <td>10</td>\n          <td>58,8%</td>\n          <td class=\"score-nf\">6,5 / 10</td>\n        </tr>\n        <tr class=\"brand-vinix\">\n          <td><strong>Vinix 7</strong></td>\n          <td>7</td>\n          <td>41,2%</td>\n          <td class=\"score-vinix\">8,5 / 10</td>\n        </tr>\n        <tr class=\"brand-bisa\">\n          <td><strong>BISA AI</strong></td>\n          <td>0</td>\n          <td>0%</td>\n          <td class=\"score-bisa\">1,0 / 10</td>\n        </tr>\n      </tbody>\n    </table>\n  </section>\n\n  <section>\n    <h2>💡 Rekomendasi Strategis untuk NF Academy</h2>\n\n    <ol>\n      <li>\n        <strong>Perjelas identitas brand.</strong>\n        Gunakan nama lengkap \"Nurul Fikri Academy\" atau istilah\n        \"NF Academy IT\" secara konsisten pada website, media sosial,\n        dan materi promosi agar tidak tertukar dengan entitas lain.\n      </li>\n      <li>\n        <strong>Perbanyak testimoni alumni.</strong>\n        Dorong alumni membagikan pengalaman belajar, proyek, dan\n        perkembangan karier melalui LinkedIn, Instagram, atau website resmi.\n      </li>\n      <li>\n        <strong>Optimalkan kata kunci.</strong>\n        Gunakan kata kunci yang lebih spesifik seperti \"bootcamp IT\",\n        \"pelatihan teknologi\", dan \"kursus digital\" untuk meningkatkan\n        relevansi hasil pencarian.\n      </li>\n      <li>\n        <strong>Perkuat bukti keberhasilan.</strong>\n        Publikasikan hasil proyek peserta, profil instruktur, program\n        pelatihan, dan cerita keberhasilan alumni dengan izin yang sesuai.\n      </li>\n      <li>\n        <strong>Pantau kompetitor secara berkala.</strong>\n        Bandingkan jumlah mention, sentimen, dan topik pembicaraan\n        NF Academy dengan Vinix 7 dan BISA AI menggunakan periode\n        serta sumber data yang konsisten.\n      </li>\n    </ol>\n  </section>\n\n  <section>\n    <h2>📝 Kesimpulan</h2>\n\n    <p>\n      Berdasarkan dataset yang dianalisis, NF Academy memiliki Share\n      of Voice tertinggi sebesar 58,8%. Namun, tingginya jumlah mention\n      belum sepenuhnya menunjukkan bahwa semua percakapan relevan\n      dengan program pendidikan IT yang ditawarkan.\n    </p>\n\n    <p>\n      Vinix 7 memperoleh skor reputasi tertinggi dalam analisis ini,\n      yaitu 8,5 dari 10, karena kontennya lebih terfokus pada pendidikan,\n      pengalaman magang, dan pengembangan karier. Sementara itu,\n      belum ditemukannya mention BISA AI membuat reputasinya belum\n      dapat dinilai secara memadai dari dataset yang tersedia.\n    </p>\n\n    <p>\n      NF Academy dapat memperkuat posisi kompetitifnya melalui\n      diferensiasi identitas brand, peningkatan testimoni alumni,\n      serta konten yang lebih relevan dengan kebutuhan calon peserta.\n    </p>\n\n    <div class=\"note\">\n      <strong>Batasan analisis:</strong>\n      Kesimpulan dan skor reputasi bergantung pada data mentah yang\n      tersedia. Skor sebaiknya ditinjau kembali setelah data diperluas\n      dan sentimen setiap mention divalidasi.\n    </div>\n  </section>\n\n  <footer>\n    <p>© 2026 — Laporan Strategi Bisnis & Intelijen Kompetitif</p>\n    <p>Analisis berdasarkan dataset mention yang tersedia</p>\n  </footer>\n\n</div>\n\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        48
+      ],
+      "id": "0432d8e3-11c8-4918-9bf2-73f505ad181b",
+      "name": "Generate HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "sk_92dffb410e98cc6e6942913dc382dffa8a27f091"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $json.html }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1136,
+        48
+      ],
+      "id": "05ff4e57-2ce7-4b29-b728-1eb2c2768a31",
+      "name": "HTML to PDF"
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "6148926352",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "📊 *Laporan Intelijen Kompetitif — 15 Oktober 2026*\n\n🔹 **NF Academy:** SoV 100% — 10 mention terdeteksi  \n🔹 **BISA AI:** Belum ada mention terdeteksi  \n🔹 **Vinix 7:** Belum ada mention terdeteksi  \n\n⭐ *Highlight Analisis*\n\nNF Academy mendominasi dataset yang dianalisis. Sejumlah mention menunjukkan sentimen positif terkait keahlian dan kualitas pelatihan.\n\n⚠️ *Catatan Penting*\n\nSebagian mention NF Academy mungkin merujuk pada akademi sepak bola internasional, bukan Nurul Fikri Academy. Data kompetitor yang nihil juga belum membuktikan rendahnya brand awareness.\n\n📎 *Lampiran:* PDF lengkap analisis sentimen, reputasi online, Share of Voice, dan rekomendasi strategis.",
+          "fileName": "Laporan Intelijen Kompetitif - 15 oktober 2026.pdf"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        48
+      ],
+      "id": "4b1111e4-d3bf-48ab-b77f-6c06b77e3bcc",
+      "name": "Kirim PDF ke Telegram ",
+      "webhookId": "948b4b90-5bea-41c1-9d8c-25d99b9507e6",
+      "credentials": {
+        "telegramApi": {
+          "id": "MaYerBErBVLHH2iD",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "{\n  \"q\": \"\\\"BISA AI\\\"\",\n  \"gl\": \"id\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -320,
+        48
+      ],
+      "id": "9101c6bb-b896-420a-a858-8661bf7e2390",
+      "name": "BISA AI ",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "poB2e58Fby6Nkvhb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "{\n  \"q\": \"\\\"Vinix 7\\\"\",\n  \"gl\": \"id\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -320,
+        240
+      ],
+      "id": "357d624a-9270-463d-aae8-2564b101491b",
+      "name": "Vinix7",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "poB2e58Fby6Nkvhb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Anda adalah pakar Strategi Bisnis dan Analis Intelijen Kompetitif. Tugas Anda adalah menganalisis data mention dari internet untuk membandingkan brand NF Academy (milik pengguna) dengan kompetitornya (BISA AI dan Vinix 7). Fokus pada sentimen, tren fitur, dan peluang pasar.\n\n**Lakukan analisis kompetitif berdasarkan DATA METRICS berikut:**\n- Total Mentions: `{{ $json.metrics.total_mentions }}`\n- NF Academy: `{{ $json.metrics.breakdown.nfa }}` mention (`{{ $json.metrics.share_of_voice.nfa }}%`)\n- BISA AI: `{{ $json.metrics.breakdown.bisa }}` mention (`{{ $json.metrics.share_of_voice.bisa }}%`)\n- Vinix 7: `{{ $json.metrics.breakdown.vinix }}` mention (`{{ $json.metrics.share_of_voice.vinix }}%`)\n\nDan DATA MENTAH berikut:\n\n`{{ $json.text_for_ai }}`\n\n**Tugas Anda:**\n1. Mengapa Share of Voice (SoV) NF Academy relatif `{{ $json.metrics.share_of_voice.nfa > 33 ? 'TINGGI' : 'RENDAH' }}` dibandingkan kompetitor? Apa yang mereka lakukan dengan benar atau salah berdasarkan sentimen di data mentah?\n2. Berikan skor reputasi online (skala 1–10) untuk masing-masing dari 3 brand tersebut berdasarkan analisis sentimen dari data mentah. Jelaskan alasan di balik setiap skor dengan mengutip contoh spesifik.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        368,
+        48
+      ],
+      "id": "f8622228-a523-4aca-b9f6-90ddc93d24d3",
+      "name": "Prompt untuk perbandingan ",
+      "retryOnFail": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "NFA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "BISA AI ",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vinix7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Prompt untuk perbandingan ",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NFA": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gabungkan Data": {
+      "main": [
+        [
+          {
+            "node": "Menyiapkan Teks AI ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Menyiapkan Teks AI ": {
+      "main": [
+        [
+          {
+            "node": "Prompt untuk perbandingan ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mencatat Hasil": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML": {
+      "main": [
+        [
+          {
+            "node": "HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Kirim PDF ke Telegram ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BISA AI ": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vinix7": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt untuk perbandingan ": {
+      "main": [
+        [
+          {
+            "node": "Mencatat Hasil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4bba7302-2080-456e-8d8b-cccac619e28e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc96f10ae7dc95d3c138575ba243a0a167923dbcb524841d451aadf9135d5fb3"
+  },
+  "nodeGroups": [],
+  "id": "74C5Z5eAyy3EfBV2",
+  "tags": []
+}
