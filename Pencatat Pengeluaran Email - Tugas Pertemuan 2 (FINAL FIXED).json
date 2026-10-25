@@ -1,0 +1,390 @@
+{
+  "name": "Pencatat Pengeluaran Email - Tugas Pertemuan 2 (FINAL FIXED)",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "rule-idch",
+                    "leftValue": "={{ $json.snippet }}",
+                    "rightValue": "IDCloudHost",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IDCloudHost"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "rule-grab",
+                    "leftValue": "={{ $json.snippet }}",
+                    "rightValue": "Grab",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Grab"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "1d13594c-619c-4e47-b645-05e25ea5608b",
+                    "leftValue": "={{ $json.snippet }}",
+                    "rightValue": "Token Listrik",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Tokopedia"
+            }
+          ]
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "id": "f87fca2e-9de4-427b-8b2b-3f299d673939",
+      "name": "Switch - Identifikasi Sumber",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -400,
+        -64
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Sv1XWyNIq76r77FNJ_Oa88DEHT-UG16974TjTgXJB_U",
+          "mode": "list",
+          "cachedResultName": "Pencatat Keuangan Dari Email",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Sv1XWyNIq76r77FNJ_Oa88DEHT-UG16974TjTgXJB_U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Sv1XWyNIq76r77FNJ_Oa88DEHT-UG16974TjTgXJB_U/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Tanggal": "={{ $json.Tanggal }}",
+            "Jumlah": "={{ $json[\"Jumlah  \"] }}",
+            "Produk": "={{ $json.Nominal }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Tanggal",
+              "displayName": "Tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Jumlah",
+              "displayName": "Jumlah",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Produk",
+              "displayName": "Produk",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "2c02f415-fe6d-46f7-b256-41e201172d54",
+      "name": "Google Sheets - Append Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        144,
+        -48
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ek1E1AI6JEvtB8tP",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-tanggal-idch",
+              "name": "Tanggal",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "field-merchant-idch",
+              "name": "Jumlah",
+              "value": "={{ $json.snippet.match(/Total.*?Rp\\s*([\\d\\.]+)/s)?.[1].replace(/\\./g, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "field-nominal-idch",
+              "name": "Nominal",
+              "value": "Cloud",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "08424878-0171-458a-bb34-b6096254f68a",
+      "name": "IDCloudHost",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-tanggal-grab",
+              "name": "Tanggal",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "field-merchant-grab",
+              "name": "Jumlah ",
+              "value": "=25000",
+              "type": "string"
+            },
+            {
+              "id": "field-nominal-grab",
+              "name": "Prodok",
+              "value": "Grab",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "82be2d0b-a966-4950-bace-0b9b11f78698",
+      "name": "Grab",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-tanggal-tokped",
+              "name": "Tanggal",
+              "value": "={{ new Date(Number($json.internalDate)).toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "field-merchant-tokped",
+              "name": "Jumlah  ",
+              "value": "={{ $json.snippet.match(/Harga:\\s*Rp\\s*([\\d.]+)/)?.[1]?.replace(/\\./g, '') || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-nominal-tokped",
+              "name": "Nominal",
+              "value": "={{ $json.snippet.match(/Produk\\s+(.+?)\\s+\\d{1,2}\\s+\\w+\\s+\\d{4}/i)?.[1] || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "61387ad0-f525-4f79-a39f-9f686e99b375",
+      "name": "Tokopedia",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "id": "acc21333-37f2-4a2c-bae7-97774b52a7fa",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        -48
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jxyEWFzTrRaG92Mm",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch - Identifikasi Sumber": {
+      "main": [
+        [
+          {
+            "node": "IDCloudHost",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Grab",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tokopedia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IDCloudHost": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grab": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tokopedia": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch - Identifikasi Sumber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3091bb75-e6b8-4bc0-b065-a65c30a4b126",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc96f10ae7dc95d3c138575ba243a0a167923dbcb524841d451aadf9135d5fb3"
+  },
+  "nodeGroups": [],
+  "id": "BHlXDOVCz2YSk74Y",
+  "tags": []
+}
